@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const AnswersController_1 = require("../controllers/AnswersController");
+const answersController = new AnswersController_1.AnswersController();
+const answersRoutes = (0, express_1.Router)();
+answersRoutes.post("/", answersController.create);
+answersRoutes.put("/:id", answersController.update);
+answersRoutes.delete("/:id", answersController.delete);
+answersRoutes.get("/", answersController.index);
+answersRoutes.get("/:id", answersController.show);
+exports.default = answersRoutes;

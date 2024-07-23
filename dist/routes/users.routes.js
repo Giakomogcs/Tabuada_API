@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const UsersController_1 = __importDefault(require("../controllers/UsersController"));
+const UsersPictureController_1 = __importDefault(require("../controllers/UsersPictureController"));
+const multer_1 = __importDefault(require("multer"));
+const uploads_1 = __importDefault(require("../configs/uploads"));
+const usersRoutes = (0, express_1.Router)();
+const upload = (0, multer_1.default)(uploads_1.default.MULTER);
+const usersController = new UsersController_1.default();
+const usersPictureController = new UsersPictureController_1.default();
+usersRoutes.post("/", usersController.create);
+usersRoutes.put("/:id", usersController.update);
+usersRoutes.delete("/:id", usersController.delete);
+usersRoutes.get("/", usersController.index);
+usersRoutes.get("/:id", usersController.show);
+usersRoutes.patch("/picture", upload.single("picture"), usersPictureController.update);
+exports.default = usersRoutes;

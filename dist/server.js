@@ -9,10 +9,12 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const AppError_1 = __importDefault(require("./utils/AppError"));
 const postgres_1 = __importDefault(require("./database/postgres"));
 const routes_1 = __importDefault(require("./routes"));
+const uploads_1 = __importDefault(require("../src/configs/uploads"));
 dotenv_1.default.config();
 (0, postgres_1.default)();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.use("/files", express_1.default.static(uploads_1.default.UPLOADS_FOLDER));
 app.use(routes_1.default);
 app.use((error, request, response, next) => {
     if (error instanceof AppError_1.default) {
