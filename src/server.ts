@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import AppError from "./utils/AppError";
 import postgresConnection from "./database/postgres";
 import routes from "./routes";
+import cors from "cors";
 
 import uploadConfig from "./configs/uploads";
 
@@ -11,6 +12,7 @@ dotenv.config();
 postgresConnection();
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER));
