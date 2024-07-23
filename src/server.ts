@@ -5,7 +5,7 @@ import AppError from "./utils/AppError";
 import postgresConnection from "./database/postgres";
 import routes from "./routes";
 
-import uploadConfig from "../src/configs/uploads";
+import uploadConfig from "./configs/uploads";
 
 dotenv.config();
 postgresConnection();

@@ -9,7 +9,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const AppError_1 = __importDefault(require("./utils/AppError"));
 const postgres_1 = __importDefault(require("./database/postgres"));
 const routes_1 = __importDefault(require("./routes"));
-const uploads_1 = __importDefault(require("../src/configs/uploads"));
+const uploads_1 = __importDefault(require("./configs/uploads"));
 dotenv_1.default.config();
 (0, postgres_1.default)();
 const app = (0, express_1.default)();

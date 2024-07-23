@@ -33,6 +33,7 @@ module.exports = {
         },
         migrations: {
             directory: path_1.default.resolve(__dirname, "src", "database", "knex", "migrations"),
+            tableName: "knex_migrations",
         },
         useNullAsDefault: true,
         formatting: { capSQL: true },

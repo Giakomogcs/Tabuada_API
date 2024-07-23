@@ -1,4 +1,4 @@
-const config = require("../../../knexfile");
+const config = require("../../knexfile");
 require("dotenv").config();
 
 import knex from "knex";

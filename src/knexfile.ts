@@ -39,6 +39,7 @@ module.exports = {
         "knex",
         "migrations"
       ),
+      tableName: "knex_migrations",
     },
     useNullAsDefault: true,
     formatting: { capSQL: true },
