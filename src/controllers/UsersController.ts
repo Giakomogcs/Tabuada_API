@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import AppError from "../utils/AppError";
 import knex from "../database/knex/index";
 import { hash, compare } from "bcrypt";
+import { AnswersController } from "./AnswersController";
 
 interface User {
   id: number;
@@ -17,7 +18,8 @@ declare global {
 
 class UsersController {
   async create(request: Request, response: Response): Promise<void> {
-    let { name, email, password, birthday } = request.body;
+    let { name, class_id, age, id_student, hits, picture } = request.body;
+    const answersController = new AnswersController();
 
     const currentTimestamp = new Date();
 
@@ -25,71 +27,53 @@ class UsersController {
       throw new AppError("Nome é obrigatório");
     }
 
-    if (!email) {
-      throw new AppError("E-mail é obrigatório");
+    try {
+      const [user] = await knex("users")
+        .insert({
+          id: id_student,
+          name,
+          class_id,
+          age,
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp,
+          picture,
+        })
+        .returning("id");
+
+      await answersController.create({
+        id_student,
+        hits,
+      });
+
+      response.status(201).json("Usuário e respostas salvas com sucesso.");
+    } catch (error) {
+      console.error(error);
+      response.status(500).json({ error: "Internal Server Error" });
     }
-
-    email = email.toLowerCase();
-    const checkUserExists = await knex("users").where({ email }).first();
-
-    if (checkUserExists) {
-      throw new AppError("Esse e-mail já está em uso");
-    }
-
-    const hashedPassword = await hash(password, 8);
-
-    const [user] = await knex("users")
-      .insert({
-        name,
-        email,
-        password: hashedPassword,
-        birthday,
-        created_at: currentTimestamp,
-        updated_at: currentTimestamp,
-      })
-      .returning("id");
-
-    response.status(201).json({ user });
   }
 
   async update(request: Request, response: Response): Promise<void> {
-    const user_id = request.user?.id;
-    //const { id } = request.params;
+    //const user_id = request.user?.id;
+    const { id } = request.params;
 
     const currentTimestamp = new Date();
 
-    const { name, email, password, old_password, birthday, picture } =
-      request.body;
+    const { name, class_id, age, picture } = request.body;
 
-    const user = await knex("users").where({ id: user_id }).first();
+    const user = await knex("users").where({ id }).first();
 
     if (!user) {
       throw new AppError("Não foi possível encontrar o usuário", 401);
     }
 
     user.name = name ?? user.name;
-    user.birthday = birthday ?? user.birthday;
+    user.class_id = class_id ?? user.class_id;
+    user.age = age ?? user.age;
     user.picture = picture ?? user.picture;
 
     user.updated_at = currentTimestamp;
 
-    if (password && !old_password) {
-      throw new AppError(
-        "Você precisa informar a senha antiga para alterar a senha."
-      );
-    }
-
-    if (password && old_password) {
-      const checkOlddPassword = await compare(old_password, user.password);
-
-      if (!checkOlddPassword) {
-        throw new AppError("A senha antiga não confere");
-      }
-
-      user.password = await hash(password, 8);
-    }
-
-    await knex("users").update(user).where({ id: user_id });
+    await knex("users").update(user).where({ id });
 
     response.status(200).json(user);
   }
@@ -110,6 +94,13 @@ class UsersController {
 
   async index(request: Request, response: Response): Promise<void> {
     let user = await knex("users");
+
+    response.status(200).json(user);
+  }
+
+  async show(request: Request, response: Response): Promise<void> {
+    const { id } = request.params;
+    let user = await knex("users").where(id).first();
 
     response.status(200).json(user);
   }

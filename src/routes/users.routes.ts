@@ -13,13 +13,14 @@ const usersController = new UsersController();
 const usersPictureController = new UsersPictureController();
 
 usersRoutes.post("/", usersController.create);
-usersRoutes.put("/", ensureAuthenticated, usersController.update);
+usersRoutes.put("/:id", usersController.update);
 usersRoutes.delete("/:id", usersController.delete);
 usersRoutes.get("/", usersController.index);
+usersRoutes.get("/:id", usersController.show);
 
 usersRoutes.patch(
   "/picture",
-  ensureAuthenticated,
+
   upload.single("picture"),
   usersPictureController.update
 );
