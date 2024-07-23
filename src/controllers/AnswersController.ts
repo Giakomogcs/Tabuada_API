@@ -3,27 +3,38 @@ import AppError from "../utils/AppError";
 import knex from "../database/knex/index";
 
 class AnswersController {
-  async create(data: { id_student: string; hits: any }): Promise<void> {
-    const { id_student, hits } = data;
+  async create(data: {
+    id_student: string;
+    hits: any;
+    roomMult: any;
+  }): Promise<void> {
+    const { id_student, roomMult, hits } = data;
 
     // Verificar se o usuário existe
-    const checkTagExists = await knex("users")
+    const checkUserExists = await knex("users")
       .where({ id: id_student })
       .first();
 
-    if (!checkTagExists) {
+    if (!checkUserExists) {
       throw new AppError("Usuário não existe");
+    }
+
+    if (!roomMult) {
+      throw new AppError("Sala de multiplicação é obrigatório");
     }
 
     if (!hits) {
       throw new AppError("Perguntas e respostas são obrigatórias");
     }
 
+    const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
+
     // Inserir a resposta
     const [idAnswer] = await knex("answers")
       .insert({
         user_id: id_student,
-        hits,
+        hits: hitsJson,
+        roomMult,
         created_at: new Date(),
         updated_at: new Date(),
       })

@@ -18,13 +18,23 @@ declare global {
 
 class UsersController {
   async create(request: Request, response: Response): Promise<void> {
-    let { name, class_id, age, id_student, hits, picture } = request.body;
+    let { name, class_id, age, id_student, roomMult, hits, picture } =
+      request.body;
     const answersController = new AnswersController();
 
     const currentTimestamp = new Date();
 
-    if (!name) {
-      throw new AppError("Nome é obrigatório");
+    if (!id_student) {
+      throw new AppError("Id é obrigatório");
+    }
+
+    // Verificar se o usuário existe
+    const checkUserExists = await knex("users")
+      .where({ id: id_student })
+      .first();
+
+    if (checkUserExists) {
+      throw new AppError("Usuário já existe");
     }
 
     try {
@@ -42,6 +52,7 @@ class UsersController {
 
       await answersController.create({
         id_student,
+        roomMult,
         hits,
       });
 
