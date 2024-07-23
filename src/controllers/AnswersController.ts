@@ -3,12 +3,8 @@ import AppError from "../utils/AppError";
 import knex from "../database/knex/index";
 
 class AnswersController {
-  async create(data: {
-    id_student: string;
-    hits: any;
-    roomMult: any;
-  }): Promise<void> {
-    const { id_student, roomMult, hits } = data;
+  async create(request: Request, response: Response): Promise<void> {
+    const { id_student, roomMult, hits } = request.body;
 
     // Verificar se o usuário existe
     const checkUserExists = await knex("users")
@@ -41,7 +37,7 @@ class AnswersController {
       .returning("id");
 
     // Não é necessário enviar a resposta aqui, pois não estamos lidando com o `response` no contexto do `AnswersController`
-    return { idAnswer } as any;
+    response.status(201).json("Respostas salvas com sucesso.");
   }
 
   async update(request: Request, response: Response): Promise<void> {

@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import AppError from "../utils/AppError";
 import knex from "../database/knex/index";
 import { hash, compare } from "bcrypt";
-import { AnswersController } from "./AnswersController";
 
 interface User {
   id: number;
@@ -20,7 +19,6 @@ class UsersController {
   async create(request: Request, response: Response): Promise<void> {
     let { name, class_id, age, id_student, roomMult, hits, picture } =
       request.body;
-    const answersController = new AnswersController();
 
     const currentTimestamp = new Date();
 
@@ -50,7 +48,7 @@ class UsersController {
         })
         .returning("id");
 
-      await answersController.create({
+      await createFirstAnswer({
         id_student,
         roomMult,
         hits,
@@ -115,6 +113,45 @@ class UsersController {
 
     response.status(200).json(user);
   }
+}
+
+async function createFirstAnswer(data: {
+  id_student: string;
+  hits: any;
+  roomMult: any;
+}): Promise<void> {
+  const { id_student, roomMult, hits } = data;
+
+  // Verificar se o usuário existe
+  const checkUserExists = await knex("users").where({ id: id_student }).first();
+
+  if (!checkUserExists) {
+    throw new AppError("Usuário não existe");
+  }
+
+  if (!roomMult) {
+    throw new AppError("Sala de multiplicação é obrigatório");
+  }
+
+  if (!hits) {
+    throw new AppError("Perguntas e respostas são obrigatórias");
+  }
+
+  const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
+
+  // Inserir a resposta
+  const [idAnswer] = await knex("answers")
+    .insert({
+      user_id: id_student,
+      hits: hitsJson,
+      roomMult,
+      created_at: new Date(),
+      updated_at: new Date(),
+    })
+    .returning("id");
+
+  // Não é necessário enviar a resposta aqui, pois não estamos lidando com o `response` no contexto do `AnswersController`
+  return { idAnswer } as any;
 }
 
 export default UsersController;
