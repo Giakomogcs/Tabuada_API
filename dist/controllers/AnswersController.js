@@ -8,6 +8,7 @@ const AppError_1 = __importDefault(require("../utils/AppError"));
 const index_1 = __importDefault(require("../database/knex/index"));
 const GeminiController_1 = __importDefault(require("./GeminiController"));
 const UsersController_1 = __importDefault(require("./UsersController"));
+const geminiAnalyzerGoal_1 = require("../service/geminiAnalyzerGoal");
 class AnswersController {
     async create(request, response) {
         try {
@@ -42,24 +43,26 @@ class AnswersController {
                 hits: hitsJson,
                 roomMult: roomMult,
             };
-            const analyzedGoal = await geminiController.resultIA(customRequest);
+            //const analyzedGoal = await geminiController.resultIA(customRequest);
+            const analyzedGoal = await (0, geminiAnalyzerGoal_1.analyzeHitsWithGemini)({ customRequest });
             // Criar a resposta para enviar ao cliente
             const responsePayload = {
                 id_student,
                 roomMult,
                 resultIA: analyzedGoal.resultIA,
+                sumary: analyzedGoal.sumary,
             };
             // Salvar no banco de dados e enviar a resposta simultaneamente
             await Promise.all([
                 (0, index_1.default)("answers").insert({
                     user_id: id_student,
-                    resultIA: analyzedGoal.resultIA,
+                    resultIA: analyzedGoal,
                     roomMult,
-                    hits: analyzedGoal.hits,
+                    hits: hitsJson,
                     created_at: new Date(),
                     updated_at: new Date(),
                 }),
-                response.status(201).json(responsePayload), // Enviar a resposta ao cliente
+                response.status(201).json(analyzedGoal), // Enviar a resposta ao cliente
             ]);
         }
         catch (error) {
