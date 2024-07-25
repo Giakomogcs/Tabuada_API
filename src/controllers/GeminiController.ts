@@ -23,6 +23,14 @@ interface Student {
   hits: Hit[];
 }
 
+interface AnalyzeGoalResult {
+  id_student: string;
+  hits: any; // Substitua 'any' por um tipo mais específico se souber a estrutura exata
+  roomMult: string;
+  resultIA: string;
+  sumary?: string; // Campo opcional se não for sempre presente
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -31,10 +39,17 @@ declare global {
   }
 }
 
+interface CustomRequest extends Request {
+  user_id: any;
+  hits: string;
+  roomMult: any;
+}
+
 class GeminiController {
   async analyzeHits(request: Request, response: Response): Promise<void> {
     try {
       const StudentData: Student = request.body;
+
       const user_id = StudentData.id_student;
       const user = await knex("users").where({ id: user_id }).first();
 
@@ -52,6 +67,17 @@ class GeminiController {
         console.error(error);
         response.status(500).json({ error: "Internal server error" });
       }
+    }
+  }
+
+  async resultIA(StudentData: Student): Promise<AnalyzeGoalResult> {
+    try {
+      const analyzedGoal = await analyzeHitsWithGemini({ StudentData });
+
+      return analyzedGoal;
+    } catch (error) {
+      console.error("Erro ao processar resultIA:", error);
+      throw new Error("Erro ao processar análise do objetivo.");
     }
   }
 }

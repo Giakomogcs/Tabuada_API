@@ -7,19 +7,19 @@ const AppError_1 = __importDefault(require("../utils/AppError"));
 const index_1 = __importDefault(require("../database/knex/index"));
 class UsersController {
     async create(request, response) {
-        let { name, class_id, age, id_student, roomMult, hits, picture } = request.body;
-        const currentTimestamp = new Date();
-        if (!id_student) {
-            throw new AppError_1.default("Id é obrigatório");
-        }
-        // Verificar se o usuário existe
-        const checkUserExists = await (0, index_1.default)("users")
-            .where({ id: id_student })
-            .first();
-        if (checkUserExists) {
-            throw new AppError_1.default("Usuário já existe");
-        }
         try {
+            let { name, class_id, age, id_student, roomMult, hits, picture } = request.body;
+            const currentTimestamp = new Date();
+            if (!id_student) {
+                throw new AppError_1.default("Id é obrigatório");
+            }
+            // Verificar se o usuário existe
+            const checkUserExists = await (0, index_1.default)("users")
+                .where({ id: id_student })
+                .first();
+            if (checkUserExists) {
+                throw new AppError_1.default("Usuário já existe");
+            }
             const [user] = await (0, index_1.default)("users")
                 .insert({
                 id: id_student,
@@ -31,16 +31,47 @@ class UsersController {
                 picture,
             })
                 .returning("id");
-            await createFirstAnswer({
-                id_student,
-                roomMult,
-                hits,
-            });
-            response.status(201).json("Usuário e respostas salvas com sucesso.");
+            response.status(201).json("Usuário salvo com sucesso.");
+        }
+        catch (error) {
+            if (error instanceof AppError_1.default) {
+                response.status(400).json({ error: error.message });
+            }
+            else {
+                console.error(error);
+                response.status(500).json({ error: "Internal Server Error" });
+            }
+        }
+    }
+    async createBeforeFirstAnswer(data) {
+        try {
+            const { name, class_id, age, id_student, roomMult, hits, picture } = data;
+            const currentTimestamp = new Date();
+            if (!id_student) {
+                throw new AppError_1.default("Id é obrigatório");
+            }
+            // Verificar se o usuário existe
+            const checkUserExists = await (0, index_1.default)("users")
+                .where({ id: id_student })
+                .first();
+            if (checkUserExists) {
+                throw new AppError_1.default("Usuário já existe");
+            }
+            const [user] = await (0, index_1.default)("users")
+                .insert({
+                id: id_student,
+                name,
+                class_id,
+                age,
+                created_at: currentTimestamp,
+                updated_at: currentTimestamp,
+                picture,
+            })
+                .returning("id");
+            return;
         }
         catch (error) {
             console.error(error);
-            response.status(500).json({ error: "Internal Server Error" });
         }
     }
     async update(request, response) {
@@ -78,32 +109,5 @@ class UsersController {
         let user = await (0, index_1.default)("users").where(id).first();
         response.status(200).json(user);
     }
-}
-async function createFirstAnswer(data) {
-    const { id_student, roomMult, hits } = data;
-    // Verificar se o usuário existe
-    const checkUserExists = await (0, index_1.default)("users").where({ id: id_student }).first();
-    if (!checkUserExists) {
-        throw new AppError_1.default("Usuário não existe");
-    }
-    if (!roomMult) {
-        throw new AppError_1.default("Sala de multiplicação é obrigatório");
-    }
-    if (!hits) {
-        throw new AppError_1.default("Perguntas e respostas são obrigatórias");
-    }
-    const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
-    // Inserir a resposta
-    const [idAnswer] = await (0, index_1.default)("answers")
-        .insert({
-        user_id: id_student,
-        hits: hitsJson,
-        roomMult,
-        created_at: new Date(),
-        updated_at: new Date(),
-    })
-        .returning("id");
-    // Não é necessário enviar a resposta aqui, pois não estamos lidando com o `response` no contexto do `AnswersController`
-    return { idAnswer };
 }
 exports.default = UsersController;

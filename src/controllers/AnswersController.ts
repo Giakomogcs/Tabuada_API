@@ -1,43 +1,82 @@
 import { Request, Response } from "express";
 import AppError from "../utils/AppError";
 import knex from "../database/knex/index";
+import GeminiController from "./GeminiController";
+import UsersController from "./UsersController";
+import { analyzeHitsWithGemini } from "../service/geminiAnalyzerGoal";
 
 class AnswersController {
   async create(request: Request, response: Response): Promise<void> {
-    const { id_student, roomMult, hits } = request.body;
+    try {
+      const { name, class_id, age, id_student, roomMult, hits, picture } =
+        request.body;
+      const geminiController = new GeminiController();
+      const usersController = new UsersController();
 
-    // Verificar se o usuário existe
-    const checkUserExists = await knex("users")
-      .where({ id: id_student })
-      .first();
+      // Verificar se o usuário existe
+      const checkUserExists = await knex("users")
+        .where({ id: id_student })
+        .first();
 
-    if (!checkUserExists) {
-      throw new AppError("Usuário não existe");
-    }
-
-    if (!roomMult) {
-      throw new AppError("Sala de multiplicação é obrigatório");
-    }
-
-    if (!hits) {
-      throw new AppError("Perguntas e respostas são obrigatórias");
-    }
-
-    const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
-
-    // Inserir a resposta
-    const [idAnswer] = await knex("answers")
-      .insert({
-        user_id: id_student,
-        hits: hitsJson,
+      const StudentData = {
+        name,
+        class_id,
+        age,
+        id_student,
         roomMult,
-        created_at: new Date(),
-        updated_at: new Date(),
-      })
-      .returning("id");
+        hits,
+        picture,
+      };
 
-    // Não é necessário enviar a resposta aqui, pois não estamos lidando com o `response` no contexto do `AnswersController`
-    response.status(201).json("Respostas salvas com sucesso.");
+      if (!checkUserExists) {
+        await usersController.createBeforeFirstAnswer(StudentData);
+      }
+
+      if (!roomMult) {
+        throw new AppError("Sala de multiplicação é obrigatório");
+      }
+
+      if (!hits) {
+        throw new AppError("Perguntas e respostas são obrigatórias");
+      }
+
+      const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
+      const customRequest: any = {
+        id_student,
+        hits: hitsJson,
+        roomMult: roomMult,
+      };
+      //const analyzedGoal = await geminiController.resultIA(customRequest);
+      const analyzedGoal = await analyzeHitsWithGemini({ customRequest });
+
+      // Criar a resposta para enviar ao cliente
+      const responsePayload = {
+        id_student,
+        roomMult,
+        resultIA: analyzedGoal.resultIA,
+        sumary: analyzedGoal.sumary,
+      };
+
+      // Salvar no banco de dados e enviar a resposta simultaneamente
+      await Promise.all([
+        knex("answers").insert({
+          user_id: id_student,
+          resultIA: analyzedGoal,
+          roomMult,
+          hits: hitsJson,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }),
+        response.status(201).json(analyzedGoal), // Enviar a resposta ao cliente
+      ]);
+    } catch (error) {
+      if (error instanceof AppError) {
+        response.status(400).json({ error: error.message });
+      } else {
+        console.error(error);
+        response.status(500).json({ error: "Erro ao salvar respostas." });
+      }
+    }
   }
 
   async update(request: Request, response: Response): Promise<void> {

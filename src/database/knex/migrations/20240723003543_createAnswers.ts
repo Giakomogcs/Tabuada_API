@@ -7,6 +7,7 @@ export const up = async (knex: Knex): Promise<void> => {
 
     table.text("roomMult");
     table.json("hits");
+    table.json("resultIA");
 
     table.timestamp("created_at");
     table.timestamp("updated_at");

@@ -7,7 +7,7 @@
     "strict": true,
     "esModuleInterop": true,
   },
-  "include": ["src/**/*.ts", "../knexfile.ts"],
+  "include": ["src/**/*.ts", "./src/knexfile.ts"],
   "exclude": ["node_modules"],
   "typeRoots": ["./src/@types"],
 }

@@ -28,5 +28,15 @@ class GeminiController {
             }
         }
     }
+    async resultIA(StudentData) {
+        try {
+            const analyzedGoal = await (0, geminiAnalyzerGoal_1.analyzeHitsWithGemini)({ StudentData });
+            return analyzedGoal;
+        }
+        catch (error) {
+            console.error("Erro ao processar resultIA:", error);
+            throw new Error("Erro ao processar análise do objetivo.");
+        }
+    }
 }
 exports.default = GeminiController;

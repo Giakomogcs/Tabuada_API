@@ -7,6 +7,7 @@ const up = async (knex) => {
         table.text("user_id").references("id").inTable("users").onDelete("CASCADE");
         table.text("roomMult");
         table.json("hits");
+        table.json("resultIA");
         table.timestamp("created_at");
         table.timestamp("updated_at");
     });

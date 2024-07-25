@@ -6,35 +6,71 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnswersController = void 0;
 const AppError_1 = __importDefault(require("../utils/AppError"));
 const index_1 = __importDefault(require("../database/knex/index"));
+const GeminiController_1 = __importDefault(require("./GeminiController"));
+const UsersController_1 = __importDefault(require("./UsersController"));
 class AnswersController {
     async create(request, response) {
-        const { id_student, roomMult, hits } = request.body;
-        // Verificar se o usuário existe
-        const checkUserExists = await (0, index_1.default)("users")
-            .where({ id: id_student })
-            .first();
-        if (!checkUserExists) {
-            throw new AppError_1.default("Usuário não existe");
+        try {
+            const { name, class_id, age, id_student, roomMult, hits, picture } = request.body;
+            const geminiController = new GeminiController_1.default();
+            const usersController = new UsersController_1.default();
+            // Verificar se o usuário existe
+            const checkUserExists = await (0, index_1.default)("users")
+                .where({ id: id_student })
+                .first();
+            const StudentData = {
+                name,
+                class_id,
+                age,
+                id_student,
+                roomMult,
+                hits,
+                picture,
+            };
+            if (!checkUserExists) {
+                await usersController.createBeforeFirstAnswer(StudentData);
+            }
+            if (!roomMult) {
+                throw new AppError_1.default("Sala de multiplicação é obrigatório");
+            }
+            if (!hits) {
+                throw new AppError_1.default("Perguntas e respostas são obrigatórias");
+            }
+            const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
+            const customRequest = {
+                id_student,
+                hits: hitsJson,
+                roomMult: roomMult,
+            };
+            const analyzedGoal = await geminiController.resultIA(customRequest);
+            // Criar a resposta para enviar ao cliente
+            const responsePayload = {
+                id_student,
+                roomMult,
+                resultIA: analyzedGoal.resultIA,
+            };
+            // Salvar no banco de dados e enviar a resposta simultaneamente
+            await Promise.all([
+                (0, index_1.default)("answers").insert({
+                    user_id: id_student,
+                    resultIA: analyzedGoal.resultIA,
+                    roomMult,
+                    hits: analyzedGoal.hits,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                }),
+                response.status(201).json(responsePayload), // Enviar a resposta ao cliente
+            ]);
         }
-        if (!roomMult) {
-            throw new AppError_1.default("Sala de multiplicação é obrigatório");
+        catch (error) {
+            if (error instanceof AppError_1.default) {
+                response.status(400).json({ error: error.message });
+            }
+            else {
+                console.error(error);
+                response.status(500).json({ error: "Erro ao salvar respostas." });
+            }
         }
-        if (!hits) {
-            throw new AppError_1.default("Perguntas e respostas são obrigatórias");
-        }
-        const hitsJson = typeof hits === "string" ? hits : JSON.stringify(hits);
-        // Inserir a resposta
-        const [idAnswer] = await (0, index_1.default)("answers")
-            .insert({
-            user_id: id_student,
-            hits: hitsJson,
-            roomMult,
-            created_at: new Date(),
-            updated_at: new Date(),
-        })
-            .returning("id");
-        // Não é necessário enviar a resposta aqui, pois não estamos lidando com o `response` no contexto do `AnswersController`
-        response.status(201).json("Respostas salvas com sucesso.");
     }
     async update(request, response) {
         const { id } = request.params;
